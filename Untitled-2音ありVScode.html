@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>モンハン 武器種レポート</title>
+<style>
+  :root{
+    --bg:#14110f;
+    --panel:#1c1815;
+    --panel2:#221d19;
+    --line:#332c26;
+    --ink:#f1ece2;
+    --sub:#a89e8f;
+    --ember:#e0532b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+    padding:56px 20px 90px;
+  }
+  .wrap{max-width:860px;margin:0 auto;}
+  h1{
+    font-size:clamp(26px,4vw,38px);
+    font-weight:700;
+    letter-spacing:.02em;
+    margin:0 0 6px;
+  }
+  .lede{color:var(--sub);font-size:15px;margin:0 0 36px;line-height:1.7;}
+
+  /* タブ */
+  .tabs{
+    position:relative;
+    display:flex;
+    gap:4px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:4px;
+    margin-bottom:40px;
+  }
+  .tabs button{
+    flex:1;
+    position:relative;
+    z-index:2;
+    padding:12px 10px;
+    background:none;
+    border:0;
+    color:var(--sub);
+    font-size:14px;
+    font-weight:600;
+    font-family:inherit;
+    cursor:pointer;
+    transition:color .3s;
+  }
+  .tabs button.active{color:var(--bg);}
+  .tab-indicator{
+    position:absolute;
+    top:4px;bottom:4px;left:4px;
+    width:calc(50% - 4px);
+    background:var(--ember);
+    border-radius:7px;
+    transition:transform .35s cubic-bezier(.16,1,.3,1);
+    z-index:1;
+  }
+
+  .panel-title{
+    font-size:14px;
+    color:var(--sub);
+    font-weight:600;
+    margin:0 0 16px;
+  }
+  .panels{display:grid;gap:32px;grid-template-columns:1fr;}
+  @media(min-width:720px){.panels{grid-template-columns:1.1fr 1fr;}}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:24px 22px;
+  }
+
+  /* 棒グラフ */
+  .row{
+    display:grid;
+    grid-template-columns:66px 1fr 52px;
+    align-items:center;
+    gap:12px;
+    padding:7px 0;
+  }
+  .name{font-size:13px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+  .track{position:relative;height:16px;background:var(--panel2);border-radius:3px;overflow:hidden;}
+  .fill{
+    position:absolute;inset:0 auto 0 0;
+    width:0;border-radius:3px;
+    transition:width 1s cubic-bezier(.16,1,.3,1);
+  }
+  .pct{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;}
+
+  /* 円グラフ */
+  .pie-area{display:flex;align-items:center;gap:22px;flex-wrap:wrap;justify-content:center;}
+  .pie-wrap{
+    clip-path:circle(0% at 50% 50%);
+    transform:rotate(-70deg) scale(.7);
+    transform-origin:50% 50%;
+    transition:clip-path 1s cubic-bezier(.16,1,.3,1), transform 1s cubic-bezier(.16,1,.3,1);
+  }
+  .pie-wrap.show{clip-path:circle(60% at 50% 50%);transform:rotate(0deg) scale(1);}
+  .legend{display:grid;gap:6px;font-size:12px;flex:1;min-width:150px;}
+  .legend .li{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;}
+  .legend .sw{width:10px;height:10px;border-radius:2px;}
+  .legend .lname{color:var(--ink);}
+  .legend .lpct{color:var(--sub);font-variant-numeric:tabular-nums;text-align:right;}
+
+  footer{margin-top:36px;color:var(--sub);font-size:12px;}
+
+  /* BGM */
+  .bgm-btn{
+    position:fixed;
+    top:18px;right:18px;
+    z-index:50;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-size:13px;
+    font-family:inherit;
+    padding:8px 14px;
+    border-radius:20px;
+    cursor:pointer;
+  }
+  .bgm-btn:hover{border-color:var(--ember);}
+  .bgm-panel{
+    position:fixed;
+    bottom:18px;right:18px;
+    width:220px;
+    height:130px;
+    z-index:49;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+    transform:translateY(20px) scale(.9);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .3s, transform .3s;
+  }
+  .bgm-panel.show{
+    opacity:1;
+    transform:translateY(0) scale(1);
+    pointer-events:auto;
+  }
+  .bgm-panel iframe{width:100%;height:100%;border:0;display:block;}
+  .bgm-hint{
+    position:absolute;
+    bottom:100%;right:0;
+    margin-bottom:6px;
+    font-size:11px;
+    color:var(--sub);
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:4px 8px;
+    border-radius:6px;
+    white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+<button id="bgmToggle" class="bgm-btn">🔇 BGM</button>
+<div id="bgmPanel" class="bgm-panel">
+  <span class="bgm-hint">最初だけ再生ボタンを押してね</span>
+</div>
+
+<div class="wrap">
+  <h1>武器種レポート</h1>
+  <p class="lede">実際の使用率と、俺的な最強ランキング。タブで切り替え。</p>
+
+  <div class="tabs">
+    <div class="tab-indicator" id="tabInd"></div>
+    <button class="active" data-set="A">使用率ランキング</button>
+    <button data-set="B">俺的最強ランキング</button>
+  </div>
+
+  <div class="panels">
+    <div class="card">
+      <p class="panel-title" id="barTitle">武器種別使用率ランキング</p>
+      <div id="barChart"></div>
+    </div>
+    <div class="card">
+      <p class="panel-title" id="pieTitle">武器種別使用率</p>
+      <div class="pie-area">
+        <svg id="pieSvg" width="180" height="180" viewBox="0 0 180 180"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>単位：％</footer>
+</div>
+
+<script>
+  const colors = {
+    "太刀":"#e0532b","双剣":"#f2b134","ライト":"#4fb0c6","弓":"#7a9e5e",
+    "大剣":"#c9484f","スラアク":"#9b6bd1","ヘビィ":"#5c8fd6","チャアク":"#d68c45",
+    "片手剣":"#74c69d","操虫棍":"#b5cf5f","ハンマー":"#c77dc0","狩猟笛":"#e2b8a0",
+    "ガンス":"#4a9a86","ランス":"#8899aa"
+  };
+
+  const datasets = {
+    A:{
+      barTitle:"武器種別使用率ランキング",
+      pieTitle:"武器種別使用率",
+      data:[["太刀",21.8],["双剣",13.1],["ライト",11.5],["弓",7.1],["大剣",6.8],
+            ["スラアク",6.1],["ヘビィ",5.7],["チャアク",5.7],["片手剣",4.6],
+            ["操虫棍",4.2],["ハンマー",3.7],["狩猟笛",3.6],["ガンス",3.2],["ランス",3.0]]
+    },
+    B:{
+      barTitle:"私的最強武器種ランキング",
+      pieTitle:"私的最強武器種ランキング割合",
+      data:[["ガンス",20.9],["双剣",14.2],["太刀",13.2],["スラアク",6.3],["ライト",6.0],
+            ["操虫棍",5.9],["弓",5.9],["チャアク",5.5],["大剣",5.2],["ランス",4.4],
+            ["片手剣",3.9],["ハンマー",3.3],["狩猟笛",3.1],["ヘビィ",2.2]]
+    }
+  };
+
+  const barChart = document.getElementById("barChart");
+  const pieSvg = document.getElementById("pieSvg");
+  const legend = document.getElementById("legend");
+  const barTitle = document.getElementById("barTitle");
+  const pieTitle = document.getElementById("pieTitle");
+  const tabInd = document.getElementById("tabInd");
+
+  function animateNumber(el, target, dur){
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now-start)/dur);
+      const eased = 1 - Math.pow(1-t, 3);
+      el.textContent = (target*eased).toFixed(1);
+      if(t<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function renderBar(data, titleText){
+    barTitle.textContent = titleText;
+    barChart.innerHTML = "";
+    const max = Math.max(...data.map(d=>d[1]));
+    data.forEach(([name, pct], i)=>{
+      const row = document.createElement("div");
+      row.className = "row";
+      const crown = i===0 ? "👑" : "";
+      row.innerHTML = `
+        <div class="name">${crown}${name}</div>
+        <div class="track"><div class="fill" style="background:${colors[name]}"></div></div>
+        <div class="pct">0.0</div>
+      `;
+      barChart.appendChild(row);
+      const fillEl = row.querySelector(".fill");
+      const pctEl = row.querySelector(".pct");
+      setTimeout(()=>{
+        fillEl.style.width = (pct/max*100)+"%";
+        animateNumber(pctEl, pct, 900);
+      }, 40*i);
+    });
+  }
+
+  function renderPie(data, titleText){
+    pieTitle.textContent = titleText;
+    const r = 70, cx = 90, cy = 90, circumference = 2*Math.PI*r;
+    let offset = 0;
+    let segs = "";
+    data.forEach(([name, pct])=>{
+      const len = (pct/100)*circumference;
+      segs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+                 stroke="${colors[name]}" stroke-width="30"
+                 stroke-dasharray="${len} ${circumference-len}"
+                 stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += len;
+    });
+    pieSvg.innerHTML = `<g class="pie-wrap" id="pieWrap">${segs}</g>`;
+
+    legend.innerHTML = "";
+    data.forEach(([name, pct])=>{
+      const li = document.createElement("div");
+      li.className = "li";
+      li.innerHTML = `<span class="sw" style="background:${colors[name]}"></span>
+                       <span class="lname">${name}</span>
+                       <span class="lpct">${pct.toFixed(1)}%</span>`;
+      legend.appendChild(li);
+    });
+
+    const wrap = document.getElementById("pieWrap");
+    void wrap.getBoundingClientRect();
+    requestAnimationFrame(()=> wrap.classList.add("show"));
+  }
+
+  function showSet(key){
+    const ds = datasets[key];
+    renderBar(ds.data, ds.barTitle);
+    renderPie(ds.data, ds.pieTitle);
+  }
+
+  document.querySelectorAll(".tabs button").forEach((btn, i)=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      tabInd.style.transform = `translateX(${i*100}%)`;
+      showSet(btn.dataset.set);
+    });
+  });
+
+  showSet("A");
+
+  // BGM(ニコニコ動画の埋め込みプレイヤーを小さいパネルで表示)
+  const bgmBtn = document.getElementById("bgmToggle");
+  const bgmPanel = document.getElementById("bgmPanel");
+  const BGM_URL = "https://embed.nicovideo.jp/watch/sm43550008?autoplay=1";
+  let panelOpen = false;
+  let loaded = false;
+
+  bgmBtn.addEventListener("click", () => {
+    if (!loaded) {
+      const iframe = document.createElement("iframe");
+      iframe.src = BGM_URL;
+      iframe.allow = "autoplay";
+      bgmPanel.appendChild(iframe);
+      loaded = true;
+    }
+    panelOpen = !panelOpen;
+    bgmPanel.classList.toggle("show", panelOpen);
+    bgmBtn.textContent = panelOpen ? "🔊 BGM" : "🔇 BGM";
+  });
+</script>
+</body>
+</html>
